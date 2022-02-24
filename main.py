@@ -57,7 +57,9 @@ for file in filesList:
     fileName = file.name
     filePath = os.path.dirname(file)
 
-    print(colored('[ ' + str(iterationCount) + '/' + str(totalFiles) + ' ] Start parsing FITS: ' + fileName, 'blue', None, ['bold']))
+    print(
+        colored('[ ' + str(iterationCount) + '/' + str(totalFiles) + ' ] Start parsing FITS: ' + fileName, 'blue', None,
+                ['bold']))
 
     # Create and open analysis files if reports enabled in config
     if config['GENERAL']['report'] == 'on':
@@ -72,10 +74,14 @@ for file in filesList:
     # Retrieve data, exposure time, airmass, and filter from fits file:
     Data = image[0].data
 
-    etime = config['HEADER']['exptimeVal'] if config['HEADER']['exptimeKey'] == 'NONE' else image[0].header[config['HEADER']['exptimeKey']]
-    filter = config['HEADER']['filterVal'] if config['HEADER']['filterKey'] == 'NONE' else image[0].header[config['HEADER']['filterKey']]
-    airmass = config['HEADER']['airmassVal'] if config['HEADER']['airmassKey'] == 'NONE' else image[0].header[config['HEADER']['airmassKey']]
-    gain = config['HEADER']['gainVal'] if config['HEADER']['gainKey'] == 'NONE' else image[0].header[config['HEADER']['gainKey']]
+    etime = config['HEADER']['exptimeVal'] if config['HEADER']['exptimeKey'] == 'NONE' else image[0].header[
+        config['HEADER']['exptimeKey']]
+    filter = config['HEADER']['filterVal'] if config['HEADER']['filterKey'] == 'NONE' else image[0].header[
+        config['HEADER']['filterKey']]
+    airmass = config['HEADER']['airmassVal'] if config['HEADER']['airmassKey'] == 'NONE' else image[0].header[
+        config['HEADER']['airmassKey']]
+    gain = config['HEADER']['gainVal'] if config['HEADER']['gainKey'] == 'NONE' else image[0].header[
+        config['HEADER']['gainKey']]
 
     # Compute background sky level through random median sampling:
     # Inputs: data array, nxn size of random subarray to use for sampling, and number of desired sampling iterations
@@ -101,9 +107,9 @@ for file in filesList:
         yhigh = 0
     if config['PARSING']['frameArea'] == 'custom':
         inset = Data[
-            int(config['PARSING']['yLow']) - 1:int(config['PARSING']['yHigh']) - 1,
-            int(config['PARSING']['xLow']) - 1:int(config['PARSING']['xHigh']) - 1
-        ]
+                int(config['PARSING']['yLow']) - 1:int(config['PARSING']['yHigh']) - 1,
+                int(config['PARSING']['xLow']) - 1:int(config['PARSING']['xHigh']) - 1
+                ]
         mid = 0
 
     # Blanket removal of bad pixels above 45000 and 3*standard deviation below 0:
@@ -161,50 +167,47 @@ for file in filesList:
             int(config['PARSING']['boxHW']), inset, starpoints, etime, gain, fileName
         )
 
-        # Output data table to file if reports enabled in config:
-        if config['GENERAL']['report'] == 'on':
-            n = len(mags)
-            tname = [fileName] * n
-            tfilter = [filter] * n
-            tairmass = [airmass] * n
-            tetime = [etime] * n
-            x = [x for [x, y] in adjstarpoints]
-            y = [y for [x, y] in adjstarpoints]
-            t = Table([tname, tfilter, tairmass, tetime, x, y, mags, magerr], names=('File_Name', 'Filter', 'Airmass', 'Exposure_Time', 'X', 'Y', 'Magnitude', 'Mag_Err'))
-            t.write(fileStar, format='csv')
-
         # Plot fits image with square apertures for detected stars overlaid
         if config['PLOTS']['plotStars'] == 'on':
             fig, ax = plt.subplots(1)
             ax.imshow(Data, cmap='Greys', vmin=0, vmax=10)
             for i in range(0, len(x)):
-                rect = patches.Rectangle(((x[i] - 1 - hw), (y[i] - 1 - hw)), 2 * hw, 2 * hw, linewidth=1, edgecolor='r', facecolor='none')
+                rect = patches.Rectangle(((x[i] - 1 - hw), (y[i] - 1 - hw)), 2 * hw, 2 * hw, linewidth=1, edgecolor='r',
+                                         facecolor='none')
                 ax.add_patch(rect)
             if config['PARSING']['frameArea'] == 'custom':
-                rect = patches.Rectangle((xlow - 1, ylow - 1), xhigh - xlow, yhigh - ylow, linewidth=1, edgecolor='b', facecolor='none')
+                rect = patches.Rectangle((xlow - 1, ylow - 1), xhigh - xlow, yhigh - ylow, linewidth=1, edgecolor='b',
+                                         facecolor='none')
                 ax.add_patch(rect)
             plt.title(fileName)
             plt.show()
 
-        file_dir = os.path.dirname(os.getcwd()) + '\\\photparty\\bias\\'
-        bias_name = 'Bias_0.000032_secs_2021-08-25T22-24-49_015.fits'
-
-        counter = 0
-        progress = 0
-        meanFWHM = 0
-        meanSNR = 0
-
-        # Initial call to print 0% progress
-        totalLength = len(adjstarpoints)
-
         if config['GENERAL']['calculateFWHM'] == 'on':
+            # Initial call to print 0% progress
+            totalLength = len(adjstarpoints)
+
             if totalLength != 0:
+                # file_dir = os.path.dirname(os.getcwd()) + '\\\photparty\\bias\\'
+                fileBias = config['GENERAL']['calibrateBiasFile']
+
+                # Check if bias file not exist
+                if not os.path.exists(fileBias):
+                    print('[', colored('ERROR', 'red'), '] Bias calibrate file not exist (' + fileBias + ')')
+                    quit()
+
+                counter = 0
+                progress = 0
+                meanFWHM = 0
+                meanSNR = 0
+                DataFWHM = []
+
                 progressPrefix = '[ ' + colored('FWHM', 'yellow') + ' ] Calculation'
                 progressBar(0, totalLength, prefix=progressPrefix, suffix='', length=50)
 
                 for [x, y] in adjstarpoints:
                     try:
-                        FWHM_obj = FWHM.fwhm(img_name=file, xy_star=(x, y), sky_radius=30, bias_name=file_dir + '\\' + bias_name, ccd_gain=gain)
+                        FWHM_obj = FWHM.fwhm(img_name=file, xy_star=(x, y), sky_radius=30, bias_name=fileBias,
+                                             ccd_gain=gain)
                         FWHM_obj.read_star_img()
                         FWHM_obj.get_max_count()
                         FWHM_obj.set_centroid()
@@ -221,6 +224,15 @@ for file in filesList:
                         meanFWHM += fwhm
                         meanSNR += snr
 
+                        DataFWHM.append([
+                            round(fwhm, 2),
+                            round(star_radius),
+                            round(snr, 2),
+                            round(sky_flux, 2),
+                            round(star_flux, 2),
+                            n_pixels
+                        ])
+
                         # print('FWHM: ', round(fwhm, 2), 'pixels')
                         # print('Star Radius:', round(star_radius), 'pixels')
                         # print('Centroide: %i,%i' % (x, y))
@@ -230,6 +242,7 @@ for file in filesList:
                         # print('Star Pixels:', n_pixels)
 
                     except:
+                        DataFWHM.append([0, 0, 0, 0, 0, 0])
                         continue
 
                     finally:
@@ -244,6 +257,28 @@ for file in filesList:
 
             else:
                 print('[', colored('ERROR', 'red'), '] No stars found in file')
+
+        # Output data table to file if reports enabled in config:
+        if config['GENERAL']['report'] == 'on':
+            n = len(mags)
+            tairmass = [airmass] * n
+            x = [x for [x, y] in adjstarpoints]
+            y = [y for [x, y] in adjstarpoints]
+
+            if config['GENERAL']['calculateFWHM'] == 'on':
+                fwhm = [fwhm for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
+                radius = [radius for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
+                snr = [snr for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
+                skyFlux = [skyFlux for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
+                starFlux = [starFlux for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
+                px = [px for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
+                t = Table([x, y, tairmass, mags, magerr, fwhm, radius, snr, skyFlux, starFlux, px],
+                      names=('X', 'Y', 'Airmass', 'Magnitude', 'Mag_Err', 'FWHM', 'Radius', 'SNR', 'Sky Flux', 'Star Flux', 'Star Pixels'))
+            else:
+                t = Table([x, y, tairmass, mags, magerr],
+                      names=('X', 'Y', 'Airmass', 'Magnitude', 'Mag_Err'))
+
+            t.write(fileStar, format='csv')
 
         print(
             '[', colored('OK', 'green'),
