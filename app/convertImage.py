@@ -24,3 +24,5 @@ def convertImage(file, fileName, contrast, saveDir):
     im.save(saveDir + '/' + jpg_file_name)
     im.close()
     print('[', colored('OK', 'green'), '] Converted image (', jpg_file_name.strip(), ') save')
+
+    return jpg_file_name

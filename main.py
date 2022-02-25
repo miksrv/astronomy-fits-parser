@@ -9,10 +9,13 @@
 
 import numpy as np
 import os
+import json
 import configparser
 import matplotlib.patches as patches
 import matplotlib.pylab as plt
 from pathlib import Path
+
+import requests
 from termcolor import colored
 from astropy.io import fits
 from astropy.table import Table
@@ -62,9 +65,9 @@ for file in filesList:
                 ['bold']))
 
     # Create and open analysis files if reports enabled in config
-    if config['GENERAL']['report'] == 'on':
-        fNameStar = config['GENERAL']['reportPath'] + '/' + fileName + '.stars.csv'
-        fNameData = config['GENERAL']['reportPath'] + '/' + fileName + '.data.txt'
+    if config['REPORT']['toFiles'] == 'on':
+        fNameStar = config['REPORT']['toFilesPath'] + '/' + fileName + '.stars.csv'
+        fNameData = config['REPORT']['toFilesPath'] + '/' + fileName + '.data.txt'
         fileStar = open(fNameStar, 'w')
         fileData = open(fNameData, 'w')
 
@@ -259,7 +262,7 @@ for file in filesList:
                 print('[', colored('ERROR', 'red'), '] No stars found in file')
 
         # Output data table to file if reports enabled in config:
-        if config['GENERAL']['report'] == 'on':
+        if config['REPORT']['toFiles'] == 'on':
             n = len(mags)
             tairmass = [airmass] * n
             x = [x for [x, y] in adjstarpoints]
@@ -273,10 +276,13 @@ for file in filesList:
                 starFlux = [starFlux for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
                 px = [px for [fwhm, radius, snr, skyFlux, starFlux, px] in DataFWHM]
                 t = Table([x, y, tairmass, mags, magerr, fwhm, radius, snr, skyFlux, starFlux, px],
-                      names=('X', 'Y', 'Airmass', 'Magnitude', 'Mag_Err', 'FWHM', 'Radius', 'SNR', 'Sky Flux', 'Star Flux', 'Star Pixels'))
+                          names=(
+                              'X', 'Y', 'Airmass', 'Magnitude', 'Mag_Err', 'FWHM', 'Radius', 'SNR', 'Sky Flux',
+                              'Star Flux',
+                              'Star Pixels'))
             else:
                 t = Table([x, y, tairmass, mags, magerr],
-                      names=('X', 'Y', 'Airmass', 'Magnitude', 'Mag_Err'))
+                          names=('X', 'Y', 'Airmass', 'Magnitude', 'Mag_Err'))
 
             t.write(fileStar, format='csv')
 
@@ -288,7 +294,7 @@ for file in filesList:
         )
 
         # Print full parsing info to file if reports is enabled in config
-        if config['GENERAL']['report'] == 'on':
+        if config['REPORT']['toFiles'] == 'on':
             print('Exposure time:', file=fileData)
             print(etime, file=fileData)
             print('Filter:', file=fileData)
@@ -339,13 +345,57 @@ for file in filesList:
             print(mags, file=fileData)
             print('[', colored('OK', 'green'), '] Data files save')
 
+    # Конвертируем FITS в JPEG
     if config['IMAGE']['convertJPG'] == 'on':
-        convertImage(
+        imageName = convertImage(
             file=file,
             fileName=fileName,
             contrast=int(config['IMAGE']['contrast']),
             saveDir=config['IMAGE']['saveDir']
         )
+
+        if config['IMAGE']['upload'] == 'on':
+            sendFile = open(config['IMAGE']['saveDir'] + '/' + imageName, 'rb')
+            response = requests.post(
+                config['IMAGE']['uploadAPI'],
+                files={str(image[0].header['OBJECT']): sendFile}
+            )
+
+            if response.status_code == 200 and response.json()['status'] == True:
+                print('[', colored('OK', 'green'), '] Image file has been uploaded')
+            else:
+                print('[', colored('ERROR', 'red'), '] Send image file to API')
+
+    # Отправляем данные на сервер
+    if config['REPORT']['toAPI'] == 'on':
+        info = {
+            'FILE_NAME': fileName,
+            'STARS_COUNT': len(starpoints),
+            'SKY_BACKGROUND': round(insetback, 4),
+            'DEVIATION': round(std, 4),
+            'SIGMA': round(sigma, 4)
+        }
+
+        image[0].verify('silentfix+ignore')
+
+        for header in image[0].header:
+            if header == 'COMMENT': continue
+
+            info[header] = image[0].header[header]
+
+        if config['GENERAL']['calculateFWHM'] == 'on':
+            info['MEAN_FWHM'] = round(meanFWHM / counter, 2)
+            info['MEAN_SNR'] = round(meanSNR / counter, 2)
+
+        json_object = json.dumps(info)
+
+        response = requests.post(config['REPORT']['toAPIEndpoint'], json=json_object)
+
+        if response.status_code == 200 and response.json()['status'] == True:
+            print('[', colored('OK', 'green'), '] Report to API has been sent')
+        else:
+            print('[', colored('ERROR', 'red'), '] Send report file to API')
+
     # --- СТОП ЦИКЛА --- #
 
     # В САМОМ КОНЦЕ РАБОТЫ ЦИКЛА
