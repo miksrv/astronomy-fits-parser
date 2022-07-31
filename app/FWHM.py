@@ -31,17 +31,17 @@ where S is the star flux in photons, np is the pixels number of the star, Ssky i
 '''
 
 from math import exp
-import astropy.io.fits as fits
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 
-
 class fwhm:
 
-    def __init__(self, img_name, xy_star, sky_radius, bias_name='', exp_time=0, dark_current_noise=0, ccd_gain=0,
+    def __init__(self, img_data, img_header, xy_star, sky_radius, bias_data=0, exp_time=0, dark_current_noise=0, ccd_gain=0,
                  em_gain=0, ccd_serial=9916, ccd_temp=-10):
         # FWHM calculation
-        self.img_name = img_name
+        self.img_data = img_data
+        self.img_header = img_header
+        self.bias_data = bias_data
         self.x = xy_star[0]
         self.y = xy_star[1]
         self.sky_radius = sky_radius
@@ -52,27 +52,25 @@ class fwhm:
         self.em_gain = em_gain
         self.ccd_serial = ccd_serial
         self.ccd_temp = ccd_temp
-        self.bias_name = bias_name
+        # self.bias_name = bias_name
         self.exp_time = exp_time
 
         self.n_pixels_star = 0
         self.sky_flux = 0
         self.read_noise = 0
-        self.img_data = 0
         self.sky_flux = 0
         self.star_flux = 0
-        self.bias_data = 0
         self.max_star_flux = 0
         self.fwhm = 0
         self.SNR = 0
 
     def read_star_img(self):
         # read the star image
-        self.img_data = fits.getdata(self.img_name).astype(float)
-        self.header = fits.getheader(self.img_name)
+        # self.img_data = fits.getdata(self.img_name).astype(float)
+        # self.header = fits.getheader(self.img_name)
         if self.ccd_gain == 0:
             try:
-                self.ccd_gain = float(self.header['GAIN'])
+                self.ccd_gain = float(self.img_header['GAIN'])
             except:
                 1
         img_shape = self.img_data.shape
@@ -130,7 +128,7 @@ class fwhm:
         return self.fwhm, self.star_radius, x, y
 
     def read_bias_img(self):
-        self.bias_data = fits.getdata(self.bias_name).astype(float)
+        # self.bias_data = fits.getdata(self.bias_name).astype(float)
         bias_shape = self.bias_data.shape
         if bias_shape[0] == 1: self.bias_data = self.bias_data[0]
         self.read_noise = np.std(self.bias_data) * self.ccd_gain
@@ -153,11 +151,11 @@ class fwhm:
         # try to find the exposure time in the image header
         if self.exp_time == 0:
             try:
-                string_texp = self.header['EXPTIME'].split(',')
+                string_texp = self.img_header['EXPTIME'].split(',')
                 string_texp = string_texp[0] + '.' + string_texp[1]
                 self.exp_time = float(string_texp)
             except:
-                string_texp = self.header['EXPTIME']
+                string_texp = self.img_header['EXPTIME']
                 self.exp_time = float(string_texp)
 
     def read_em_gain(self):
@@ -165,21 +163,21 @@ class fwhm:
         if self.em_gain == 0:
             self.em_gain = 1
             try:
-                string_em_gain = self.header['GAIN'].split(',')
+                string_em_gain = self.img_header['GAIN'].split(',')
                 string_em_gain = string_texp[0] + '.' + string_texp[1]
                 self.em_gain = float(string_texp)
             except:
                 1
             try:
-                string_em_gain = self.header['GAIN']
+                string_em_gain = self.img_header['GAIN']
                 self.em_gain = float(string_texp)
             except:
                 1
 
     def calc_star_sky_flux(self):
         # the image needs to be read again as its centroid has been previously adjusted
-        self.img_data = fits.getdata(self.img_name).astype(float)
-        header = fits.getheader(self.img_name)
+        # self.img_data = fits.getdata(self.img_name).astype(float)
+        # header = fits.getheader(self.img_name)
         img_shape = self.img_data.shape
         if img_shape[0] == 1: self.img_data = self.img_data[0]
 

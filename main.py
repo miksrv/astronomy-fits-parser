@@ -132,10 +132,14 @@ for file in filesList:
     # Inputs: Data array, background level variable, desired sigma detection level, summed row vector, summed column vector
     starrow, starcol, backsum, std, sigma = starlocate(inset, insetback, int(config['PARSING']['sig']), rowsum, colsum)
     if not starrow:
-        print('[ ' + colored('ERROR', 'red'), '] No stars found in ' + fileName + ' by row - check threshold.')
+        print('[ ' + colored('ERROR', 'red'), '] No stars found by row - check threshold')
 
     if not starcol:
-        print('[ ' + colored('ERROR', 'red'), '] No stars found in ' + fileName + ' by column - check threshold.')
+        print('[ ' + colored('ERROR', 'red'), '] No stars found by column - check threshold')
+
+    if not starrow and not starcol:
+        print('[ ' + colored('ERROR', 'red'), '] No stars found')
+        exit()
 
     if starrow != [] and starcol != []:
 
@@ -187,10 +191,9 @@ for file in filesList:
 
         if config['GENERAL']['calculateFWHM'] == 'on':
             # Initial call to print 0% progress
-            totalLength = len(adjstarpoints)
+            totalLength = len(adjstarpoints[:10])
 
             if totalLength != 0:
-                # file_dir = os.path.dirname(os.getcwd()) + '\\\photparty\\bias\\'
                 fileBias = config['GENERAL']['calibrateBiasFile']
 
                 # Check if bias file not exist
@@ -207,10 +210,21 @@ for file in filesList:
                 progressPrefix = '[ ' + colored('FWHM', 'yellow') + ' ] Calculation'
                 progressBar(0, totalLength, prefix=progressPrefix, suffix='', length=50)
 
-                for [x, y] in adjstarpoints:
+                imageData = fits.getdata(file).astype(float)
+                imageHeader = fits.getheader(file)
+                biasData = fits.getdata(fileBias).astype(float)
+
+                # Вычисляем только по первым 10 звездам
+                for [x, y] in adjstarpoints[:10]:
                     try:
-                        FWHM_obj = FWHM.fwhm(img_name=file, xy_star=(x, y), sky_radius=30, bias_name=fileBias,
-                                             ccd_gain=gain)
+                        FWHM_obj = FWHM.fwhm(
+                            img_data=imageData,
+                            img_header=imageHeader,
+                            xy_star=(x, y),
+                            sky_radius=100,
+                            bias_data=biasData,
+                            ccd_gain=gain
+                        )
                         FWHM_obj.read_star_img()
                         FWHM_obj.get_max_count()
                         FWHM_obj.set_centroid()
@@ -363,8 +377,11 @@ for file in filesList:
 
             if response.status_code == 200 and response.json()['status'] == True:
                 print('[', colored('OK', 'green'), '] Image file has been uploaded')
+                # TODO Delete image after upload
+                # os.remove(config['IMAGE']['saveDir'] + '/' + imageName)
             else:
                 print('[', colored('ERROR', 'red'), '] Send image file to API')
+                exit()
 
     # Отправляем данные на сервер
     if config['REPORT']['toAPI'] == 'on':
@@ -380,6 +397,13 @@ for file in filesList:
 
         for header in image[0].header:
             if header == 'COMMENT': continue
+            if header == 'CCD-TEMP':
+                info['CCD_TEMP'] = image[0].header[header]
+                continue
+
+            if header == 'DATE-OBS':
+                info['DATE_OBS'] = image[0].header[header]
+                continue
 
             info[header] = image[0].header[header]
 
@@ -395,6 +419,13 @@ for file in filesList:
             print('[', colored('OK', 'green'), '] Report to API has been sent')
         else:
             print('[', colored('ERROR', 'red'), '] Send report file to API')
+            exit()
+
+    # Заменяем координаты
+    # if config['GENERAL']['replaceCoords'] == 'on':
+    #     Data['SITELAT'] = float(config['GENERAL']['replaceLat'])
+    #     Data['SITELONG'] = float(config['GENERAL']['replaceLon'])
+    #     image.writeto(os.path.dirname(file) + '/' + file.name)
 
     # --- СТОП ЦИКЛА --- #
 
