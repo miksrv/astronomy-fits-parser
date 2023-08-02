@@ -39,7 +39,7 @@ https://www.python.org/downloads/windows/
 
 1. Go to the directory with the downloaded script, open console and install necessary additional packages. 
 Type in the command line:
-`pip install numpy configparser matplotlib astropy scipy`
+`pip install numpy configparser matplotlib astropy scipy termcolor`
 2. Set up a configuration file. Set the following values in the **config.ini** file:
    - Path to the root directory with FITS files. The script works recursively and checks all nested directories:
 `path = /home/user/fits`
