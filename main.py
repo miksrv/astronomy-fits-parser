@@ -266,10 +266,13 @@ for file in filesList:
                         progress += 1
                         progressBar(progress, totalLength, prefix=progressPrefix, suffix='', length=50)
 
+                averageFWHM = round(meanFWHM / counter) if counter != 0 else round(meanFWHM)
+                averageSNR = round(meanSNR / counter) if counter != 0 else round(meanSNR)
+
                 print(
                     '[', colored('OK', 'green'),
-                    '] Mean FWHM:', colored(round(meanFWHM / counter, 2), 'green', None, ['bold']),
-                    '| Mean SNR:', colored(round(meanSNR / counter, 2), 'green', None, ['bold']),
+                    '] Mean FWHM:', colored(averageFWHM), 'green', None, ['bold']),
+                    '| Mean SNR:', colored(averageSNR), 'green', None, ['bold']),
                 )
 
             else:
@@ -370,12 +373,20 @@ for file in filesList:
 
         if config['IMAGE']['upload'] == 'on':
             sendFile = open(config['IMAGE']['saveDir'] + '/' + imageName, 'rb')
+
+            # Если у файла пропущен или отсутствует заголовок OBJECT
+            if 'OBJECT' in image[0].header:
+                objectName = str(image[0].header['OBJECT'])
+            else:
+                fileParts = imageName.split('_') 
+                objectName = fileParts[0] + '_' + fileParts[1]
+
             response = requests.post(
                 config['IMAGE']['uploadAPI'],
-                files={str(image[0].header['OBJECT']): sendFile}
+                files={objectName: sendFile}
             )
 
-            if response.status_code == 200 and response.json()['status'] == True:
+            if response.status_code == 201 or response.status_code == 409:
                 print('[', colored('OK', 'green'), '] Image file has been uploaded')
                 # TODO Delete image after upload
                 # os.remove(config['IMAGE']['saveDir'] + '/' + imageName)
@@ -415,7 +426,7 @@ for file in filesList:
 
         response = requests.post(config['REPORT']['toAPIEndpoint'], json=json_object)
 
-        if response.status_code == 200 and response.json()['status'] == True:
+        if response.status_code == 201:
             print('[', colored('OK', 'green'), '] Report to API has been sent')
         else:
             print('[', colored('ERROR', 'red'), '] Send report file to API')
