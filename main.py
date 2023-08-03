@@ -271,8 +271,8 @@ for file in filesList:
 
                 print(
                     '[', colored('OK', 'green'),
-                    '] Mean FWHM:', colored(averageFWHM), 'green', None, ['bold']),
-                    '| Mean SNR:', colored(averageSNR), 'green', None, ['bold']),
+                    '] Mean FWHM:', colored(averageFWHM, 'green', None, ['bold']),
+                    '| Mean SNR:', colored(averageSNR, 'green', None, ['bold']),
                 )
 
             else:
@@ -378,7 +378,7 @@ for file in filesList:
             if 'OBJECT' in image[0].header:
                 objectName = str(image[0].header['OBJECT'])
             else:
-                fileParts = imageName.split('_') 
+                fileParts = fileName.split('_') 
                 objectName = fileParts[0] + '_' + fileParts[1]
 
             response = requests.post(
@@ -417,6 +417,10 @@ for file in filesList:
                 continue
 
             info[header] = image[0].header[header]
+
+        if info['OBJECT'] == '':
+            fileParts = fileName.split('_')
+            info['OBJECT'] = fileParts[0] + '_' + fileParts[1]
 
         if config['GENERAL']['calculateFWHM'] == 'on':
             info['MEAN_FWHM'] = round(meanFWHM / counter, 2)
