@@ -418,19 +418,20 @@ for file in filesList:
 
             info[header] = image[0].header[header]
 
-        if info['OBJECT'] == '':
+        if not 'OBJECT' in image[0].header or info['OBJECT'] == '':
             fileParts = fileName.split('_')
             info['OBJECT'] = fileParts[0] + '_' + fileParts[1]
 
         if config['GENERAL']['calculateFWHM'] == 'on':
-            info['MEAN_FWHM'] = round(meanFWHM / counter, 2)
-            info['MEAN_SNR'] = round(meanSNR / counter, 2)
+            averageCounter = counter if counter != 0 else 1
+            info['MEAN_FWHM'] = round(meanFWHM / averageCounter, 2) if 'meanFWHM' in locals() else None
+            info['MEAN_SNR'] = round(meanSNR / averageCounter, 2) if 'meanSNR' in locals() else None
 
         json_object = json.dumps(info)
 
         response = requests.post(config['REPORT']['toAPIEndpoint'], json=json_object)
 
-        if response.status_code == 201:
+        if response.status_code == 201 or response.status_code == 200:
             print('[', colored('OK', 'green'), '] Report to API has been sent')
         else:
             print('[', colored('ERROR', 'red'), '] Send report file to API')
