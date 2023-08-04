@@ -40,7 +40,8 @@ https://www.python.org/downloads/windows/
 1. Go to the directory with the downloaded script, open console and install necessary additional packages. 
 Type in the command line:
 `pip install numpy configparser matplotlib astropy scipy termcolor`
-2. Set up a configuration file. Set the following values in the **config.ini** file:
+2. Rename `_config.ini` to `config.ini`
+3. Set up a configuration file. Set the following values in the **config.ini** file:
    - Path to the root directory with FITS files. The script works recursively and checks all nested directories:
 `path = /home/user/fits`
    - If the FWHM calculation option is enabled `calculateFWHM = on`, then you need to specify the path to the bias calibration file: 
@@ -49,9 +50,9 @@ Type in the command line:
 `toAPIEndpoint = http://api.miksoft.pro/astro/set/fits`
    - If you want to upload image files that will be converted from FITS `upload = on`, then you must also specify the API:
 `uploadAPI = http://api.miksoft.pro/astro/set/image`
-3. The minimum configuration is done, you need to run the script through the console (command line):
+4. The minimum configuration is done, you need to run the script through the console (command line):
 ` py.exe .\main.py`
-4. After parsing each file, if the corresponding options are enabled in the settings:
+5. After parsing each file, if the corresponding options are enabled in the settings:
    - The image converted from the FITS file JPG will be added to the directory (`/images/`).
    - The `/analysis/` directory will contain two files for each FITS file.
    - A `.lastdate` file will be created at the root of the program, which contains the date of the last processed file. Thus, running the script again will not analyze already processed FITS files.

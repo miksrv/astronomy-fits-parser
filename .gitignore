@@ -134,3 +134,6 @@ analysis/*
 bias/*
 data/*
 images/*
+
+# main config file
+config.ini
