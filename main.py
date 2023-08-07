@@ -278,6 +278,9 @@ for file in filesList:
             else:
                 print('[', colored('ERROR', 'red'), '] No stars found in file')
 
+        else:
+            counter = 0
+
         # Output data table to file if reports enabled in config:
         if config['REPORT']['toFiles'] == 'on':
             n = len(mags)
