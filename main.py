@@ -278,9 +278,6 @@ for file in filesList:
             else:
                 print('[', colored('ERROR', 'red'), '] No stars found in file')
 
-        else:
-            counter = 0
-
         # Output data table to file if reports enabled in config:
         if config['REPORT']['toFiles'] == 'on':
             n = len(mags)
@@ -426,7 +423,7 @@ for file in filesList:
             info['OBJECT'] = fileParts[0] + '_' + fileParts[1]
 
         if config['GENERAL']['calculateFWHM'] == 'on':
-            averageCounter = counter if counter != 0 else 1
+            averageCounter = counter if 'counter' in locals() and counter != 0 else 1
             info['MEAN_FWHM'] = round(meanFWHM / averageCounter, 2) if 'meanFWHM' in locals() else None
             info['MEAN_SNR'] = round(meanSNR / averageCounter, 2) if 'meanSNR' in locals() else None
 
