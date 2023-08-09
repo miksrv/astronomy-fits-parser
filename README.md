@@ -47,9 +47,10 @@ Type in the command line:
    - If the FWHM calculation option is enabled `calculateFWHM = on`, then you need to specify the path to the bias calibration file: 
 `calibrateBiasFile = /home/user/calibrate/bias.fits`
    - If a remote service is configured to receive data about analyzed files `toAPI = on`, then you need to specify the API:
-`toAPIEndpoint = http://api.miksoft.pro/astro/set/fits`
+`toAPIEndpoint = https://YOUR_API_HOST/endpoint/fits`
    - If you want to upload image files that will be converted from FITS `upload = on`, then you must also specify the API:
-`uploadAPI = http://api.miksoft.pro/astro/set/image`
+`uploadAPI = https://YOUR_API_HOST/endpoint/image`
+5. Come up with an API key that will be sent to a remote server along with reports so that no one else can send data to your server. The server will have to validate this key: `toAPIKey = YOUR_SECRET_KEY`
 4. The minimum configuration is done, you need to run the script through the console (command line):
 ` py.exe .\main.py`
 5. After parsing each file, if the corresponding options are enabled in the settings:
@@ -97,7 +98,7 @@ FITS file header + parameters for calculating the number of stars + FHWM average
 Server API address. All data is sent by POST request as a JSON array.
 In case of success the server should return a response with a 200 header and JSON data with a (boolean) parameter { status: true }
 
-`toAPIEndpoint = http://api.miksoft.pro/astro/set/fit_object`
+`toAPIEndpoint = https://YOUR_API_HOST/endpoint/fits`
 
 ### [IMAGE]
 Convert FITS file to image JPG? Type 'on' or 'off'
@@ -119,7 +120,7 @@ If the option to convert images (FITS to JPG) is enabled, then this option will 
 
 Remote API for upload JPG image, should be return (if success) 200 header and JSON data with a parameter { status: true }
 
-`uploadAPI = http://api.miksoft.pro/astro/set/photo`
+`uploadAPI = https://YOUR_API_HOST/endpoint/images`
 
 ### [PARSING]
 
