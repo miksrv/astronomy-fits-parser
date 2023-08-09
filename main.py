@@ -362,6 +362,9 @@ for file in filesList:
             print(mags, file=fileData)
             print('[', colored('OK', 'green'), '] Data files save')
 
+    # Добавляем GET параметр к адресу отправки отчетов с API ключом
+    apiKey = '?key=' + config['IMAGE']['toAPIKey'] if config['IMAGE']['toAPIKey'] != '' else ''
+
     # Конвертируем FITS в JPEG
     if config['IMAGE']['convertJPG'] == 'on':
         imageName = convertImage(
@@ -382,7 +385,7 @@ for file in filesList:
                 objectName = fileParts[0] + '_' + fileParts[1]
 
             response = requests.post(
-                config['IMAGE']['uploadAPI'],
+                config['IMAGE']['uploadAPI'] + apiKey,
                 files={objectName: sendFile}
             )
 
@@ -429,7 +432,10 @@ for file in filesList:
 
         json_object = json.dumps(info)
 
-        response = requests.post(config['REPORT']['toAPIEndpoint'], json=json_object)
+        response = requests.post(
+            config['REPORT']['toAPIEndpoint'] + apiKey, 
+            json=json_object
+        )
 
         if response.status_code == 201 or response.status_code == 200:
             print('[', colored('OK', 'green'), '] Report to API has been sent')
