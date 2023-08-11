@@ -391,8 +391,10 @@ for file in filesList:
 
             if response.status_code == 201 or response.status_code == 409:
                 print('[', colored('OK', 'green'), '] Image file has been uploaded')
-                # TODO Delete image after upload
-                # os.remove(config['IMAGE']['saveDir'] + '/' + imageName)
+
+                if config['IMAGE']['delete'] == 'on':
+                    os.remove(config['IMAGE']['saveDir'] + '/' + imageName)
+
             else:
                 print('[', colored('ERROR', 'red'), '] Send image file to API')
                 exit()
